@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-careerpilot}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careerpilot-local-only}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your private .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,8 +28,8 @@ services:
     build: .
     environment:
       APP_ENV: ${APP_ENV:-development}
-      SECRET_KEY: ${SECRET_KEY:-development-only-key-change-before-deployment-please}
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-careerpilot-local-only}@db:5432/${POSTGRES_DB:-careerpilot}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in your private .env}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your private .env}@db:5432/${POSTGRES_DB:-careerpilot}
       REDIS_URL: redis://redis:6379/0
       RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
       UPLOAD_DIR: /data/uploads

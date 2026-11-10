@@ -38,3 +38,8 @@ def client():
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
     limiter.reset()
+
+
+@pytest.fixture
+def db_session(client):
+    yield from app.dependency_overrides[get_db]()

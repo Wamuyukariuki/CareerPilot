@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import DocumentWorkspace from "./DocumentWorkspace";
 
 type User = {
   id: string;
@@ -26,6 +27,8 @@ type CVVersion = {
   uploaded_at: string;
   extracted_sections: Record<string, string[]>;
   review_flags: string[];
+  extracted_text: string;
+  verified_at: string | null;
 };
 
 type MasterCV = {
@@ -211,7 +214,7 @@ function App() {
     return (
       <main className="auth-page">
         <section className="auth-card">
-          <div className="brand-mark">R</div>
+          <div className="brand-mark">C</div>
           <p className="eyebrow">YOUR CAREER WORKSPACE</p>
           <h1>Make your next move<br />with confidence.</h1>
           <p className="muted">A private, human-approved workspace for your job search.</p>
@@ -278,7 +281,7 @@ function App() {
       <main className="main-content" id="overview">
         <header className="topbar">
           <div><p className="eyebrow">{new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric" }).format(new Date()).toUpperCase()}</p><h1>Your career workspace</h1></div>
-          <span className="status-pill"><i /> {profile ? "Profile needs review" : "Workspace ready"}</span>
+          <span className="status-pill"><i /> {masterCVs.length === 0 ? "Workspace ready" : masterCVs.some((cv) => !cv.versions.at(-1)?.verified_at) ? "Sources need review" : "Sources verified"}</span>
         </header>
 
         <section className="welcome-panel">
@@ -330,7 +333,7 @@ function App() {
                         {Object.entries(current.extracted_sections).filter(([, entries]) => entries.length > 0).map(([section, entries]) => (
                           <div key={section}><strong>{section.replaceAll("_", " ")}</strong><span>{entries.length} extracted lines</span></div>
                         ))}
-                        {current.review_flags.map((flag) => <p className="review-flag" key={flag}>Review needed: {flag}</p>)}
+                        {current.review_flags.filter((flag) => !current.verified_at || !flag.startsWith("Extracted content is unverified.")).map((flag) => <p className="review-flag" key={flag}>Review needed: {flag}</p>)}
                       </div>
                     </>
                   ) : <p className="cv-empty">Your source document stays private and is never changed.</p>}
@@ -351,7 +354,7 @@ function App() {
 
           {profile && (
             <section className="profile-review">
-              <p className="eyebrow">EXTRACTED CANDIDATE PROFILE · NOT YET VERIFIED</p>
+              <p className="eyebrow">SOURCE-LINKED CANDIDATE PROFILE</p>
               <h3>Review the source-backed details</h3>
               <p className="documents-intro">Entries retain links to their source CVs. Exact duplicates across the current documents are grouped; dates, titles, and qualifications are not reconciled automatically.</p>
               {profile.review_flags.map((flag) => <p className="review-flag" key={flag}>{flag}</p>)}
@@ -361,13 +364,18 @@ function App() {
                   {entries.map((entry, index) => (
                     <div className="profile-entry" key={`${section}-${index}`}>
                       <span>{entry.text}</span>
-                      <small>Source CV{entry.source_slots.length > 1 ? "s" : ""} {entry.source_slots.join(", ")} · Unverified</small>
+                      <small>Source CV{entry.source_slots.length > 1 ? "s" : ""} {entry.source_slots.join(", ")} · {entry.verified ? "Has verified source" : "Unverified"}</small>
                     </div>
                   ))}
                 </div>
               ))}
             </section>
           )}
+          <DocumentWorkspace
+            accessToken={accessToken}
+            sources={masterCVs}
+            onVerified={() => refreshCVData(accessToken)}
+          />
         </section>
 
         <section className="next-step">

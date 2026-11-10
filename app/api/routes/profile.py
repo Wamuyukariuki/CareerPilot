@@ -58,7 +58,7 @@ def read_profile(
             status_code=404,
             detail="Upload a master CV to create your professional profile.",
         )
-    return profile
+    return rebuild_candidate_profile(db, current_user.id)
 
 
 @router.get("/cvs", response_model=list[CVSlotRead])

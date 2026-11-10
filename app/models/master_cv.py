@@ -72,5 +72,11 @@ class CVVersion(Base):
     uploaded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    review_history: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
 
     master_cv: Mapped[MasterCV] = relationship(back_populates="versions")
+    generated_documents: Mapped[list["GeneratedCV"]] = relationship(
+        cascade="all, delete-orphan", back_populates="source_version"
+    )

@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models import CVVersion, MasterCV, ProfessionalProfile
+from app.services.cv_review import blocking_warnings, effective_text, quality_warnings
 
 PROFILE_SECTIONS = (
     "employment_history",
@@ -29,13 +30,34 @@ def rebuild_candidate_profile(
             continue
         current = max(master_cv.versions, key=lambda version: version.version)
         current_versions.append((master_cv.slot, current))
-        profile_flags.extend(current.review_flags)
+        profile_flags.extend(
+            flag for flag in (current.review_flags if not current.review_revision else [])
+            if not (
+                current.verified_at is not None
+                and flag.startswith("Extracted content is unverified.")
+            )
+        )
+        profile_flags.extend(quality_warnings(effective_text(current)))
 
     candidate_data: dict[str, list[dict]] = {}
     for section in PROFILE_SECTIONS:
         merged: dict[str, dict] = {}
         for slot, version in current_versions:
-            for entry in version.extracted_sections.get(section, []):
+            text = effective_text(version)
+            verified = (
+                version.verified_at is not None
+                and not blocking_warnings(text)
+                and (bool(version.review_revision) or not quality_warnings(text))
+            )
+            entries = (
+                [
+                    entry["text"] for entry in version.review_history[-1]["entries"]
+                    if entry["section"] == section
+                ]
+                if version.review_revision
+                else version.extracted_sections.get(section, [])
+            )
+            for entry in entries:
                 normalized = " ".join(entry.casefold().split())
                 item = merged.setdefault(
                     normalized,
@@ -43,9 +65,12 @@ def rebuild_candidate_profile(
                         "text": entry,
                         "source_version_ids": [],
                         "source_slots": [],
-                        "verified": False,
+                        "source_review_revisions": {},
+                        "verified": verified,
                     },
                 )
+                item["verified"] = item["verified"] or verified
+                item["source_review_revisions"][str(version.id)] = version.review_revision or 0
                 if str(version.id) not in item["source_version_ids"]:
                     item["source_version_ids"].append(str(version.id))
                 if slot not in item["source_slots"]:

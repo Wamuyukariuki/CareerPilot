@@ -6,7 +6,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
-from app.api.routes import auth, profile
+from app.api.routes import auth, documents, profile
 from app.core.config import get_settings
 from app.core.limiting import limiter
 from app.db.session import engine
@@ -37,6 +37,7 @@ app.add_middleware(
 )
 app.include_router(auth.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
 
 
 @app.get("/health", tags=["operations"])

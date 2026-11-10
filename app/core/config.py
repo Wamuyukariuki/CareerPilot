@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     rate_limit_storage_uri: str = "memory://"
     upload_dir: str = "data/uploads"
+    pdf_font_paths: list[str] = []
     max_upload_size_bytes: int = Field(
         default=10 * 1024 * 1024, gt=0, le=25 * 1024 * 1024
     )
